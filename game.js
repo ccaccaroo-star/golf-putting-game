@@ -3,51 +3,24 @@
 const canvas = document.getElementById("course");
 const ctx = canvas.getContext("2d");
 const ui = Object.fromEntries(["direction", "directionValue", "power", "powerValue", "putt", "reset", "strokes", "distance", "status", "success", "successTitle", "successText", "playAgain"].map(id => [id, document.getElementById(id)]));
-const session = Object.fromEntries(["entry", "entryForm", "playerName", "game", "results", "resultTitle", "resultSummary", "storageNotice", "ranking", "newGame", "playerLabel", "roundLabel", "totalLabel"].map(id => [id, document.getElementById(id)]));
-const STORAGE_KEY = "greenplay-rankings-v1";
-let player = "", round = 1, total = 0, active = false, saved = false;
-let rankings = [];
-let storageAvailable = true;
-try {
-  const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  if (Array.isArray(records)) rankings = records.filter(r => r && typeof r.name === "string" && Number.isInteger(r.score) && r.score >= 0 && r.score <= 1000);
-} catch { storageAvailable = false; }
+const session = Object.fromEntries(["game", "results", "resultTitle", "resultSummary", "newGame", "roundLabel", "totalLabel"].map(id => [id, document.getElementById(id)]));
+let round = 1, total = 0, active = false;
 function roundScore(shots) { return Math.max(0, 100 - (shots - 1) * 10); }
 function updateSession() {
-  session.playerLabel.textContent = player;
   session.roundLabel.textContent = `${round} / 10 라운드`;
-  session.totalLabel.textContent = `합계 ${total}점`;
+  session.totalLabel.textContent = `${total}점`;
 }
 function finishGame() {
-  if (saved) return;
-  saved = true; active = false;
-  const record = { name: player, score: total };
-  rankings.push(record);
-  rankings.sort((a, b) => b.score - a.score);
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(rankings)); storageAvailable = true; }
-  catch { storageAvailable = false; }
-  const rank = rankings.findIndex(r => r.score === total) + 1;
-  session.resultSummary.textContent = `${player}님 · 10라운드 완료 · ${total} / 1000점 · ${rank}위`;
-  session.storageNotice.textContent = storageAvailable ? "기록은 이 브라우저에 저장됩니다. 같은 이름으로 다시 플레이하면 새 기록이 추가됩니다." : "브라우저에 저장할 수 없어 이번 화면에서만 기록을 확인할 수 있습니다.";
-  session.ranking.replaceChildren();
-  let displayedRank = 0;
-  rankings.forEach((r, index) => {
-    if (!index || rankings[index - 1].score !== r.score) displayedRank = index + 1;
-    const row = document.createElement("tr");
-    if (r === record) row.className = "current-record";
-    for (const value of [displayedRank, r.name, `${r.score}점`]) {
-      const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
-    }
-    session.ranking.append(row);
-  });
+  if (!active) return;
+  active = false;
+  session.resultSummary.textContent = `${total}`;
   session.game.hidden = true; session.results.hidden = false;
   session.resultTitle.focus();
 }
-function showEntry() {
-  active = false; moving = false; won = false;
-  session.game.hidden = session.results.hidden = true;
-  session.entry.hidden = false;
-  session.playerName.focus();
+function startGame() {
+  round = 1; total = 0; active = true;
+  session.results.hidden = true; session.game.hidden = false;
+  reset();
 }
 const W = 900, H = 640;
 const start = { x: 245, y: 462 };
@@ -114,8 +87,8 @@ function holeIn() {
   const score = roundScore(strokes);
   total += score;
   updateSession();
-  ui.successText.textContent = `${player}님, ${strokes}타 · ${score}점! 합계 ${total}점`;
-  ui.playAgain.textContent = round === 10 ? "최종 순위 보기 →" : "다음 라운드 →";
+  ui.successText.textContent = `${strokes}타 · +${score}점! 합계 ${total}점`;
+  ui.playAgain.textContent = round === 10 ? "최종 점수 보기 →" : "다음 라운드 →";
   ui.putt.textContent = "HOLED!";
 }
 function physics(dt) {
@@ -150,15 +123,15 @@ function ellipse(x, y, rx, ry, color) {
 }
 function draw() {
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = "#47704b"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#123d36"; ctx.fillRect(0, 0, W, H);
   // Alternating mown bands and soft landscaping, all drawn locally.
   for (let i = -8; i < 18; i++) {
     ctx.fillStyle = i % 2 ? "#ffffff04" : "#102e1607";
     ctx.beginPath(); ctx.moveTo(i * 92, 0); ctx.lineTo(i * 92 + 92, 0); ctx.lineTo(i * 92 + 410, H); ctx.lineTo(i * 92 + 318, H); ctx.fill();
   }
   ellipse(440, 338, 388, 246, "#2e543630");
-  ellipse(450, 319, 389, 248, "#729257");
-  ellipse(450, 315, 374, 233, "#a3b878");
+  ellipse(450, 319, 389, 248, "#287a5d");
+  ellipse(450, 315, 374, 233, "#62c58b");
   ctx.save(); ctx.beginPath(); ctx.ellipse(450, 315, 374, 233, 0, 0, Math.PI * 2); ctx.clip();
   for (let i = 0; i < 12; i++) { ctx.fillStyle = i % 2 ? "#ffffff08" : "#486e3407"; ctx.fillRect(i * 85, 0, 85, H); }
   for (let i = 0; i < 650; i++) {
@@ -169,15 +142,15 @@ function draw() {
   for (const r of [185, 215]) { ctx.beginPath(); ctx.ellipse(470, 311, r * 1.5, r, -.15, .2, 4.9); ctx.stroke(); }
   ctx.restore();
   for (const [x,y,r] of [[22,160,42],[49,197,29],[865,482,41],[896,440,34],[131,584,28],[787,58,35]]) {
-    ellipse(x+4,y+8,r,r*.75,"#254e3538"); ellipse(x,y,r,r*.8,"#365d40"); ellipse(x-6,y-8,r*.7,r*.52,"#527c4d");
+    ellipse(x+4,y+8,r,r*.75,"#254e3538"); ellipse(x,y,r,r*.8,"#164c40"); ellipse(x-6,y-8,r*.7,r*.52,"#236a51");
   }
   ellipse(hole.x + 20, hole.y + 7, 35, 7, "#35502922");
   ellipse(hole.x, hole.y + 2, 17, 12, "#77904f");
   ellipse(hole.x, hole.y, 13, 10, "#1c352b");
   ellipse(hole.x, hole.y + 3, 9, 5, "#0f241e");
   ctx.strokeStyle = "#fffbe4"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(hole.x, hole.y - 3); ctx.lineTo(hole.x, hole.y - 88); ctx.stroke();
-  ctx.fillStyle = "#f4d88a"; ctx.beginPath(); ctx.moveTo(hole.x+1,hole.y-88); ctx.quadraticCurveTo(hole.x+23,hole.y-98,hole.x+43,hole.y-80); ctx.lineTo(hole.x+43,hole.y-54); ctx.quadraticCurveTo(hole.x+21,hole.y-72,hole.x+1,hole.y-61); ctx.fill();
-  ctx.fillStyle = "#6d693f"; ctx.font = "bold 14px Arial"; ctx.fillText(String(round),hole.x+19,hole.y-72);
+  ctx.fillStyle = "#c5fa63"; ctx.beginPath(); ctx.moveTo(hole.x+1,hole.y-88); ctx.quadraticCurveTo(hole.x+23,hole.y-98,hole.x+43,hole.y-80); ctx.lineTo(hole.x+43,hole.y-54); ctx.quadraticCurveTo(hole.x+21,hole.y-72,hole.x+1,hole.y-61); ctx.fill();
+  ctx.fillStyle = "#204a35"; ctx.font = "bold 14px Arial"; ctx.fillText(String(round),hole.x+19,hole.y-72);
   if (!moving && !won) {
     const a = angle(), length = 60 + Number(ui.power.value) * 1.15;
     ctx.save(); ctx.strokeStyle = "#fffbe9a6"; ctx.lineWidth = 2; ctx.setLineDash([3, 9]);
@@ -214,24 +187,15 @@ ui.direction.addEventListener("input", syncControls);
 ui.power.addEventListener("input", syncControls);
 ui.putt.addEventListener("click", putt);
 ui.reset.addEventListener("click", () => {
-  if (confirm("진행 중인 점수를 버리고 새 게임을 시작할까요?")) showEntry();
+  if (confirm("진행 중인 점수를 버리고 새 게임을 시작할까요?")) { startGame(); ui.putt.focus(); }
 });
 ui.playAgain.addEventListener("click", () => {
   if (!active || !won) return;
   if (round === 10) { finishGame(); return; }
   round++; reset(); ui.putt.focus();
 });
-session.entryForm.addEventListener("submit", event => {
-  event.preventDefault();
-  const name = session.playerName.value.trim();
-  if (!name) { session.playerName.setCustomValidity("이름을 입력해 주세요."); session.playerName.reportValidity(); return; }
-  player = name.slice(0, 20); round = 1; total = 0; saved = false; active = true;
-  session.entry.hidden = session.results.hidden = true; session.game.hidden = false;
-  reset(); ui.putt.focus();
-});
-session.playerName.addEventListener("input", () => session.playerName.setCustomValidity(""));
-session.newGame.addEventListener("click", showEntry);
+session.newGame.addEventListener("click", () => { startGame(); ui.putt.focus(); });
 document.addEventListener("keydown", event => {
   if (event.code === "Space" && !["INPUT", "BUTTON", "A"].includes(document.activeElement.tagName)) { event.preventDefault(); putt(); }
 });
-syncControls(); showEntry(); requestAnimationFrame(frame);
+startGame(); requestAnimationFrame(frame);
