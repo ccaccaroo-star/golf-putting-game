@@ -3,36 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>경현의 그린 플레이</title>
+  <title>경현의 그린플레이</title>
   <link rel="stylesheet" href="style.css">
   <script src="game.js" defer></script>
 </head>
 <body>
   <main class="club">
     <header class="header">
-      <a class="brand" href="./index.html" aria-label="Sunday Green 홈"><span class="brand-mark">⚑</span> SUNDAY GREEN<span class="brand-sub">THE PUTTING CLUB</span></a>
-      <span class="club-tag"><i></i> 잠깐의 여유, 한 번의 퍼팅</span>
+      <h1>경현의 <em>그린플레이</em></h1>
     </header>
-    <section class="intro"><div><p class="eyebrow">LESS RUSH. MORE GREEN.</p><h1>경현의 <em>그린 플레이</em></h1><p class="description">방향을 맞추고, 힘을 조절하고, 가볍게 퍼팅하세요.</p></div><div class="course-info"><span>01 / THE GARDEN</span><strong>SHORT & SWEET</strong><span>평탄한 그린 · PAR 2</span></div></section>
     <section class="game-layout" aria-label="퍼팅 게임">
       <div class="course-wrap">
-        <div class="course-top"><span class="pill">⚑ &nbsp; HOLE 01</span><span class="course-label">SUNDAY GARDEN</span></div>
         <canvas id="course" width="900" height="640" aria-label="골프 그린. 그린을 클릭하거나 아래 방향 슬라이더로 조준하세요.">이 게임은 Canvas를 지원하는 브라우저가 필요합니다.</canvas>
-        <div class="course-bottom"><span><i></i> 그린을 클릭해 방향 조절</span><span>바람 0 m/s &nbsp; ↗</span></div>
+        <div class="course-bottom"><span><i></i> 그린을 눌러 방향 조절</span></div>
         <div id="success" class="success" hidden><div class="success-card"><span class="success-icon">⚑</span><p class="eyebrow">NICELY DONE!</p><h2 id="successTitle">홀인!</h2><p id="successText"></p><button id="playAgain" class="primary">한 번 더 플레이 <span>↗</span></button></div></div>
       </div>
       <aside class="panel">
-        <div class="panel-heading"><p class="eyebrow">YOUR NEXT SHOT</p><h2>당신의 차례입니다.</h2></div>
         <div class="scoreboard"><div><span>현재 타수</span><strong id="strokes">00</strong></div><div><span>홀까지 거리</span><strong><b id="distance">0.0</b><small> m</small></strong></div></div>
         <div class="control"><label for="direction">퍼팅 방향 <output id="directionValue" for="direction">0°</output></label><input id="direction" type="range" min="-180" max="180" value="-42" step="1"><div class="range-labels"><span>← 왼쪽</span><span>오른쪽 →</span></div></div>
         <div class="control power-control"><label for="power">파워 <output id="powerValue" for="power">55<span>%</span></output></label><input id="power" type="range" min="5" max="100" value="55"><div class="range-labels"><span>SOFT</span><span>STRONG</span></div></div>
         <button id="putt" class="primary">PUTT <span>↗</span></button>
         <button id="reset" class="reset">↻ &nbsp; RESET <span>처음부터 다시</span></button>
-        <div class="tip"><span>✧</span><p><strong>작은 팁</strong>점선은 방향을 안내해요. 공이 홀 근처에서 천천히 움직이면 쏙 들어갑니다.</p></div>
         <p id="status" class="status" role="status" aria-live="polite">첫 퍼팅을 준비해 주세요.</p>
       </aside>
     </section>
-    <footer><span>A LITTLE GAME. A LITTLE BREAK.</span><span>드래그 또는 클릭으로 조준 · SPACE로 퍼팅</span></footer>
   </main>
 </body>
 </html>
