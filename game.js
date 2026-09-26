@@ -3,6 +3,52 @@
 const canvas = document.getElementById("course");
 const ctx = canvas.getContext("2d");
 const ui = Object.fromEntries(["direction", "directionValue", "power", "powerValue", "putt", "reset", "strokes", "distance", "status", "success", "successTitle", "successText", "playAgain"].map(id => [id, document.getElementById(id)]));
+const session = Object.fromEntries(["entry", "entryForm", "playerName", "game", "results", "resultTitle", "resultSummary", "storageNotice", "ranking", "newGame", "playerLabel", "roundLabel", "totalLabel"].map(id => [id, document.getElementById(id)]));
+const STORAGE_KEY = "greenplay-rankings-v1";
+let player = "", round = 1, total = 0, active = false, saved = false;
+let rankings = [];
+let storageAvailable = true;
+try {
+  const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  if (Array.isArray(records)) rankings = records.filter(r => r && typeof r.name === "string" && Number.isInteger(r.score) && r.score >= 0 && r.score <= 1000);
+} catch { storageAvailable = false; }
+function roundScore(shots) { return Math.max(0, 100 - (shots - 1) * 10); }
+function updateSession() {
+  session.playerLabel.textContent = player;
+  session.roundLabel.textContent = `${round} / 10 라운드`;
+  session.totalLabel.textContent = `합계 ${total}점`;
+}
+function finishGame() {
+  if (saved) return;
+  saved = true; active = false;
+  const record = { name: player, score: total };
+  rankings.push(record);
+  rankings.sort((a, b) => b.score - a.score);
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(rankings)); storageAvailable = true; }
+  catch { storageAvailable = false; }
+  const rank = rankings.findIndex(r => r.score === total) + 1;
+  session.resultSummary.textContent = `${player}님 · 10라운드 완료 · ${total} / 1000점 · ${rank}위`;
+  session.storageNotice.textContent = storageAvailable ? "기록은 이 브라우저에 저장됩니다. 같은 이름으로 다시 플레이하면 새 기록이 추가됩니다." : "브라우저에 저장할 수 없어 이번 화면에서만 기록을 확인할 수 있습니다.";
+  session.ranking.replaceChildren();
+  let displayedRank = 0;
+  rankings.forEach((r, index) => {
+    if (!index || rankings[index - 1].score !== r.score) displayedRank = index + 1;
+    const row = document.createElement("tr");
+    if (r === record) row.className = "current-record";
+    for (const value of [displayedRank, r.name, `${r.score}점`]) {
+      const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
+    }
+    session.ranking.append(row);
+  });
+  session.game.hidden = true; session.results.hidden = false;
+  session.resultTitle.focus();
+}
+function showEntry() {
+  active = false; moving = false; won = false;
+  session.game.hidden = session.results.hidden = true;
+  session.entry.hidden = false;
+  session.playerName.focus();
+}
 const W = 900, H = 640;
 const start = { x: 245, y: 462 };
 const hole = { x: 650, y: 216, radius: 13 };
@@ -28,6 +74,12 @@ function aimAt(x, y) {
   syncControls();
 }
 function reset() {
+  // Sample inside the green, away from the cup and previous tee position.
+  const previous = { ...start };
+  do {
+    start.x = 150 + Math.random() * 600;
+    start.y = 140 + Math.random() * 350;
+  } while (((start.x - 450) / 340) ** 2 + ((start.y - 315) / 200) ** 2 > 1 || Math.hypot(start.x - hole.x, start.y - hole.y) < 160 || Math.hypot(start.x - previous.x, start.y - previous.y) < 60);
   Object.assign(ball, { ...start, vx: 0, vy: 0 });
   strokes = 0; moving = false; won = false; sink = 0; trail = [];
   ui.strokes.textContent = "00";
@@ -38,9 +90,10 @@ function reset() {
   aimAt(hole.x, hole.y);
   ui.status.textContent = "첫 퍼팅을 준비해 주세요.";
   updateDistance();
+  updateSession();
 }
 function putt() {
-  if (moving || won) return;
+  if (!active || moving || won) return;
   const speed = Number(ui.power.value) * 5;
   ball.vx = Math.cos(angle()) * speed;
   ball.vy = Math.sin(angle()) * speed;
@@ -51,12 +104,17 @@ function putt() {
   ui.status.textContent = "공이 굴러가는 중이에요…";
 }
 function holeIn() {
+  if (!active || won) return;
   won = true; moving = false; ball.vx = ball.vy = 0;
   ball.x = hole.x; ball.y = hole.y;
   ui.distance.textContent = "0.0";
   ui.status.textContent = `${strokes}타 만에 홀인!`;
   ui.successTitle.textContent = strokes === 1 ? "홀인원!" : strokes === 2 ? "나이스 파!" : "나이스 퍼팅!";
-  ui.successText.textContent = `${strokes}타 만에 성공했어요. 멋진 마무리예요.`;
+  const score = roundScore(strokes);
+  total += score;
+  updateSession();
+  ui.successText.textContent = `${player}님, ${strokes}타 · ${score}점! 합계 ${total}점`;
+  ui.playAgain.textContent = round === 10 ? "최종 순위 보기 →" : "다음 라운드 →";
   ui.putt.textContent = "HOLED!";
 }
 function physics(dt) {
@@ -118,7 +176,7 @@ function draw() {
   ellipse(hole.x, hole.y + 3, 9, 5, "#0f241e");
   ctx.strokeStyle = "#fffbe4"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(hole.x, hole.y - 3); ctx.lineTo(hole.x, hole.y - 88); ctx.stroke();
   ctx.fillStyle = "#f4d88a"; ctx.beginPath(); ctx.moveTo(hole.x+1,hole.y-88); ctx.quadraticCurveTo(hole.x+23,hole.y-98,hole.x+43,hole.y-80); ctx.lineTo(hole.x+43,hole.y-54); ctx.quadraticCurveTo(hole.x+21,hole.y-72,hole.x+1,hole.y-61); ctx.fill();
-  ctx.fillStyle = "#6d693f"; ctx.font = "bold 14px Arial"; ctx.fillText("1",hole.x+19,hole.y-72);
+  ctx.fillStyle = "#6d693f"; ctx.font = "bold 14px Arial"; ctx.fillText(String(round),hole.x+19,hole.y-72);
   if (!moving && !won) {
     const a = angle(), length = 60 + Number(ui.power.value) * 1.15;
     ctx.save(); ctx.strokeStyle = "#fffbe9a6"; ctx.lineWidth = 2; ctx.setLineDash([3, 9]);
@@ -139,7 +197,7 @@ function frame(time) {
   const dt = lastTime ? Math.min((time - lastTime) / 1000, .05) : 0;
   lastTime = time;
   physics(dt);
-  if (won) {
+  if (active && won) {
     sink += dt;
     if (sink > .65 && ui.success.hidden) { ui.success.hidden = false; ui.playAgain.focus(); }
   }
@@ -154,9 +212,25 @@ canvas.addEventListener("pointermove", event => { if (canvas.hasPointerCapture(e
 ui.direction.addEventListener("input", syncControls);
 ui.power.addEventListener("input", syncControls);
 ui.putt.addEventListener("click", putt);
-ui.reset.addEventListener("click", reset);
-ui.playAgain.addEventListener("click", () => { reset(); ui.putt.focus(); });
+ui.reset.addEventListener("click", () => {
+  if (confirm("진행 중인 점수를 버리고 새 게임을 시작할까요?")) showEntry();
+});
+ui.playAgain.addEventListener("click", () => {
+  if (!active || !won) return;
+  if (round === 10) { finishGame(); return; }
+  round++; reset(); ui.putt.focus();
+});
+session.entryForm.addEventListener("submit", event => {
+  event.preventDefault();
+  const name = session.playerName.value.trim();
+  if (!name) { session.playerName.setCustomValidity("이름을 입력해 주세요."); session.playerName.reportValidity(); return; }
+  player = name.slice(0, 20); round = 1; total = 0; saved = false; active = true;
+  session.entry.hidden = session.results.hidden = true; session.game.hidden = false;
+  reset(); ui.putt.focus();
+});
+session.playerName.addEventListener("input", () => session.playerName.setCustomValidity(""));
+session.newGame.addEventListener("click", showEntry);
 document.addEventListener("keydown", event => {
   if (event.code === "Space" && !["INPUT", "BUTTON", "A"].includes(document.activeElement.tagName)) { event.preventDefault(); putt(); }
 });
-reset(); requestAnimationFrame(frame);
+syncControls(); showEntry(); requestAnimationFrame(frame);

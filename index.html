@@ -12,18 +12,34 @@
     <header class="header">
       <h1>경현의 <em>그린플레이</em></h1>
     </header>
-    <section class="game-layout" aria-label="퍼팅 게임">
+    <section id="entry" class="session-card">
+      <form id="entryForm">
+        <label for="playerName">플레이어 이름</label>
+        <input id="playerName" maxlength="20" required autocomplete="nickname" placeholder="이름을 입력하세요">
+        <p>총 10라운드 · 1타 100점, 추가 타수마다 −10점 (최저 0점)</p>
+        <button class="primary" type="submit">게임 시작 <span>↗</span></button>
+      </form>
+    </section>
+    <section id="results" class="session-card" hidden>
+      <h2 id="resultTitle" tabindex="-1">최종 순위</h2>
+      <p id="resultSummary"></p>
+      <p id="storageNotice" class="storage-note"></p>
+      <div class="ranking-wrap"><table><caption>10라운드 합산 순위 · 동점은 공동 순위</caption><thead><tr><th>순위</th><th>이름</th><th>점수</th></tr></thead><tbody id="ranking"></tbody></table></div>
+      <button id="newGame" class="primary">새 게임 시작 <span>↗</span></button>
+    </section>
+    <section id="game" class="game-layout" aria-label="퍼팅 게임" hidden>
       <div class="course-wrap">
         <canvas id="course" width="900" height="640" aria-label="골프 그린. 그린을 클릭하거나 아래 방향 슬라이더로 조준하세요.">이 게임은 Canvas를 지원하는 브라우저가 필요합니다.</canvas>
         <div class="course-bottom"><span><i></i> 그린을 눌러 방향 조절</span></div>
         <div id="success" class="success" hidden><div class="success-card"><span class="success-icon">⚑</span><p class="eyebrow">NICELY DONE!</p><h2 id="successTitle">홀인!</h2><p id="successText"></p><button id="playAgain" class="primary">한 번 더 플레이 <span>↗</span></button></div></div>
       </div>
       <aside class="panel">
+        <div class="session-info"><strong id="playerLabel"></strong><span id="roundLabel"></span><span id="totalLabel"></span></div>
         <div class="scoreboard"><div><span>현재 타수</span><strong id="strokes">00</strong></div><div><span>홀까지 거리</span><strong><b id="distance">0.0</b><small> m</small></strong></div></div>
         <div class="control"><label for="direction">퍼팅 방향 <output id="directionValue" for="direction">0°</output></label><input id="direction" type="range" min="-180" max="180" value="-42" step="1"><div class="range-labels"><span>← 왼쪽</span><span>오른쪽 →</span></div></div>
         <div class="control power-control"><label for="power">파워 <output id="powerValue" for="power">55<span>%</span></output></label><input id="power" type="range" min="5" max="100" value="55"><div class="range-labels"><span>SOFT</span><span>STRONG</span></div></div>
         <button id="putt" class="primary">PUTT <span>↗</span></button>
-        <button id="reset" class="reset">↻ &nbsp; RESET <span>처음부터 다시</span></button>
+        <button id="reset" class="reset">새 게임</button>
         <p id="status" class="status" role="status" aria-live="polite">첫 퍼팅을 준비해 주세요.</p>
       </aside>
     </section>
