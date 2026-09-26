@@ -47,6 +47,12 @@ function aimAt(x, y) {
   syncControls();
 }
 function reset() {
+  // Keep the cup and flag inside the course and move away from the last hole.
+  const previousHole = { ...hole };
+  do {
+    hole.x = 180 + Math.random() * 540;
+    hole.y = 160 + Math.random() * 300;
+  } while (((hole.x - 450) / 310) ** 2 + ((hole.y - 315) / 175) ** 2 > 1 || Math.hypot(hole.x - previousHole.x, hole.y - previousHole.y) < 80);
   // Sample inside the green, away from the cup and previous tee position.
   const previous = { ...start };
   do {
