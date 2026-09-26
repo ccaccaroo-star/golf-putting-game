@@ -86,7 +86,8 @@ function reset() {
   ui.success.hidden = true;
   ui.putt.disabled = ui.direction.disabled = ui.power.disabled = false;
   ui.putt.innerHTML = 'PUTT <span>↗</span>';
-  ui.power.value = 55;
+  const minPower = Number(ui.power.min), maxPower = Number(ui.power.max);
+  ui.power.value = minPower + Math.floor(Math.random() * (maxPower - minPower + 1));
   aimAt(hole.x, hole.y);
   ui.status.textContent = "첫 퍼팅을 준비해 주세요.";
   updateDistance();
