@@ -62,7 +62,7 @@ function reset() {
   const minPower = Number(ui.power.min), maxPower = Number(ui.power.max);
   ui.power.value = minPower + Math.floor(Math.random() * (maxPower - minPower + 1));
   aimAt(hole.x, hole.y);
-  ui.status.textContent = "첫 퍼팅을 준비해 주세요.";
+  ui.status.textContent = "문골이 정기라운딩 매월 두번째 목요일";
   updateDistance();
   updateSession();
 }
